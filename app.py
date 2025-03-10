@@ -49,6 +49,7 @@ def create_checkout_session():
             success_url="https://my-chatbot2-ncek.onrender.com/success",
             cancel_url="https://my-chatbot2-ncek.onrender.com/cancel"
         )
+        print("✅ Stripe session created:", session.id)  # Debugging
         return jsonify({"id": session.id})
     except Exception as e:
         print("Stripe Error:", str(e))  # Debugging print
