@@ -80,6 +80,13 @@
         button:hover {
             background-color: #005bb5;
         }
+        #subscribe-button {
+            background-color: #ff4d4d;
+            margin-top: 15px;
+        }
+        #subscribe-button:hover {
+            background-color: #cc0000;
+        }
     </style>
 </head>
 <body>
@@ -89,8 +96,10 @@
         <div id="chat-box"></div>
         <input type="text" id="user-input" placeholder="Type your message...">
         <button onclick="sendMessage()">Send</button>
+        <button id="subscribe-button">Subscribe for $9.99/month</button>
     </div>
 
+    <script src="https://js.stripe.com/v3/"></script>
     <script>
         async function sendMessage() {
             let userInput = document.getElementById("user-input").value;
@@ -129,14 +138,35 @@
 
             // Remove "typing..." effect and show chatbot response
             document.getElementById("typing-indicator").remove();
-            chatBox.innerHTML += `
-                <div class="message bot">
-                    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712034.png" class="avatar">
-                    <span>${data.reply}</span>
-                </div>`;
             
+            // If user is not subscribed, show subscription message
+            if (data.reply.includes("⚠️ You need a subscription")) {
+                chatBox.innerHTML += `
+                    <div class="message bot">
+                        <img src="https://cdn-icons-png.flaticon.com/512/4712/4712034.png" class="avatar">
+                        <span>${data.reply}</span>
+                    </div>`;
+                document.getElementById("subscribe-button").style.display = "block";
+            } else {
+                chatBox.innerHTML += `
+                    <div class="message bot">
+                        <img src="https://cdn-icons-png.flaticon.com/512/4712/4712034.png" class="avatar">
+                        <span>${data.reply}</span>
+                    </div>`;
+            }
+
             chatBox.scrollTop = chatBox.scrollHeight;
         }
+
+        // Stripe Checkout
+        document.getElementById("subscribe-button").addEventListener("click", async () => {
+            let response = await fetch("/create-checkout-session", { method: "POST" });
+            let session = await response.json();
+            if (session.id) {
+                let stripe = Stripe("your-stripe-publishable-key-here");
+                stripe.redirectToCheckout({ sessionId: session.id });
+            }
+        });
     </script>
 
 </body>
