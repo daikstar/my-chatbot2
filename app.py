@@ -5,9 +5,12 @@ import stripe
 
 app = Flask(__name__)
 
-# Load API Keys
+# Load API Keys from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+# Replace with your actual Stripe Price ID
+STRIPE_PRICE_ID = "price_1R0vKFFQW2MgVpygSrjEqD0n"  # Replace with the Price ID from Stripe dashboard
 
 # Dummy user database (Replace with a real database later)
 users = {"test_user": {"subscribed": False}}
@@ -39,13 +42,7 @@ def create_checkout_session():
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             line_items=[{
-                "price_data": {
-                    "currency": "usd",
-                    "product_data": {
-                        "name": "Chatbot Monthly Subscription"
-                    },
-                    "unit_amount": 999  # $9.99 per month
-                },
+                "price": STRIPE_PRICE_ID,  # Use your actual Stripe Price ID
                 "quantity": 1
             }],
             mode="subscription",
@@ -55,7 +52,7 @@ def create_checkout_session():
         return jsonify({"id": session.id})
     except Exception as e:
         print("Stripe Error:", str(e))  # Debugging print
-        return jsonify(error=str(e)), 500
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/success")
 def success():
