@@ -21,19 +21,38 @@ def home():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    user_id = request.cookies.get("user_id", "test_user")  # Dummy user system
+    try:
+        user_id = request.cookies.get("user_id", "test_user")  # Dummy user system
 
-    # Check if user is subscribed
-    if not users.get(user_id, {}).get("subscribed", False):
-        return jsonify({"reply": "⚠️ You need a subscription to continue. Click below to subscribe."})
+        # Check if user is subscribed
+        if not users.get(user_id, {}).get("subscribed", False):
+            return jsonify({"reply": "⚠️ You need a subscription to continue. Click below to subscribe."})
 
-    user_message = request.json.get("message", "")
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": user_message}]
-    )
+        user_message = request.json.get("message", "")
 
-    return jsonify({"reply": response.choices[0].message.content})
+        # Debugging print
+        print(f"Received user message: {user_message}")
+
+        # ✅ Updated OpenAI API format
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": user_message}]
+        )
+
+        chatbot_reply = response["choices"][0]["message"]["content"]
+
+        # Debugging print
+        print(f"Chatbot reply: {chatbot_reply}")
+
+        return jsonify({"reply": chatbot_reply})
+
+    except openai.OpenAIError as e:
+        print(f"❌ OpenAI API Error: {str(e)}")  # Debugging
+        return jsonify({"reply": "⚠️ There was an error communicating with OpenAI. Try again later."})
+
+    except Exception as e:
+        print(f"❌ Chatbot Error: {str(e)}")  # Debugging
+        return jsonify({"reply": "⚠️ An unexpected error occurred. Try again later."})
 
 # Stripe Checkout Route
 @app.route("/create-checkout-session", methods=["POST"])
