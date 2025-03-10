@@ -49,11 +49,12 @@ def create_checkout_session():
                 "quantity": 1
             }],
             mode="subscription",
-            success_url=url_for("success", _external=True),
-            cancel_url=url_for("cancel", _external=True)
+            success_url="https://my-chatbot2-ncek.onrender.com/success",
+            cancel_url="https://my-chatbot2-ncek.onrender.com/cancel"
         )
         return jsonify({"id": session.id})
     except Exception as e:
+        print("Stripe Error:", str(e))  # Debugging print
         return jsonify(error=str(e)), 500
 
 @app.route("/success")
