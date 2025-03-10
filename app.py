@@ -33,13 +33,14 @@ def chat():
         # Debugging print
         print(f"Received user message: {user_message}")
 
-        # ✅ Updated OpenAI API format
-        response = openai.ChatCompletion.create(
+        # ✅ NEW OpenAI API format
+        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": user_message}]
         )
 
-        chatbot_reply = response["choices"][0]["message"]["content"]
+        chatbot_reply = response.choices[0].message.content
 
         # Debugging print
         print(f"Chatbot reply: {chatbot_reply}")
@@ -48,7 +49,7 @@ def chat():
 
     except openai.OpenAIError as e:
         print(f"❌ OpenAI API Error: {str(e)}")  # Debugging
-        return jsonify({"reply": "⚠️ There was an error communicating with OpenAI. Try again later."})
+        return jsonify({"reply": f"⚠️ OpenAI Error: {str(e)}"})
 
     except Exception as e:
         print(f"❌ Chatbot Error: {str(e)}")  # Debugging
