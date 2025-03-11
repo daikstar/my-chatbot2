@@ -17,10 +17,6 @@ users = {"test_user": {"subscribed": False}}
 
 @app.route("/")
 def home():
-    return render_template("index.html")
-
-@app.route("/")
-def home():
     user_id = request.cookies.get("user_id")
     if not user_id:
         return "⚠️ Please login first. Go back and enter a username.", 401
