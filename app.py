@@ -55,20 +55,34 @@ def subscription_status():
 @app.route("/create-checkout-session", methods=["POST"])
 def create_checkout_session():
     try:
+        data = request.json  # Get data from frontend
+        plan = data.get("plan")  # Retrieve selected plan
+
+        # Stripe Price IDs (Replace these with your actual IDs)
+        price_ids = {
+            "basic": "price_1R1KpBFQW2MgVpygh8S4eJwv",    # Replace with your Basic plan price ID
+            "pro": "price_1R1KpRFQW2MgVpygyxxQNohs",      # Replace with your Pro plan price ID
+            "premium": "price_1R1KpgFQW2MgVpyg9okwRgqk"   # Replace with your Premium plan price ID
+        }
+
+        if plan not in price_ids:
+            return jsonify({"error": "Invalid plan selected."}), 400
+
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             line_items=[{
-                "price": STRIPE_PRICE_ID,  # Use your actual Stripe Price ID
+                "price": price_ids[plan],  # Use selected plan's price ID
                 "quantity": 1
             }],
             mode="subscription",
             success_url="https://my-chatbot2-ncek.onrender.com/success",
             cancel_url="https://my-chatbot2-ncek.onrender.com/cancel"
         )
-        print("✅ Stripe session created:", session.id)  # Debugging
+
         return jsonify({"id": session.id})
+
     except Exception as e:
-        print("Stripe Error:", str(e))  # Debugging print
+        print("❌ Stripe Error:", str(e))  # Debugging
         return jsonify({"error": str(e)}), 500
 
 @app.route("/success")
