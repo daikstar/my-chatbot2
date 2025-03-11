@@ -96,7 +96,7 @@
         <div id="chat-box"></div>
         <input type="text" id="user-input" placeholder="Type your message...">
         <button onclick="sendMessage()">Send</button>
-        <button id="subscribe-button">Subscribe for $9.99/month</button>
+        <button id="chat-subscribe-button">Subscribe for $9.99/month</button>
     </div>
 
     <script>
@@ -117,41 +117,32 @@
         <option value="pro">Pro - $10/month (200 messages)</option>
         <option value="premium">Premium - $20/month (Unlimited messages)</option>
     </select>
-    <button id="subscribe-button">Subscribe</button>
+    <button id="plan-subscribe-button">Subscribe</button>
     
     <script>
-        document.getElementById("subscribe-button").addEventListener("click", async () => {
-            let selectedPlan = document.getElementById("plan-select").value;
+        document.getElementById("chat-subscribe-button").addEventListener("click", async () => {
+            console.log("📢 Chat subscribe button clicked!"); // Debugging log
     
             try {
-                let response = await fetch("/create-checkout-session", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ plan: selectedPlan })  // Send selected plan
-                });
-    
+                let response = await fetch("/create-checkout-session", { method: "POST" });
                 let session = await response.json();
-    
-                if (session.error) {
-                    alert("Error: " + session.error);
-                    return;
+                if (session.id) {
+                    let stripe = Stripe("pk_test_51R0uaiFQW2MgVpygD13czhcptz1SR1a0Dtc6Rnpezl9RVLHCJBWqds8h5SSJ00mAMo7tnCaPDa9BQtuQkOaOETfC00xUmG7E2p");
+                    stripe.redirectToCheckout({ sessionId: session.id });
+                } else {
+                    alert("Error: Could not start Stripe session.");
                 }
-    
-                let stripe = Stripe("pk_test_51R0uaiFQW2MgVpygD13czhcptz1SR1a0Dtc6Rnpezl9RVLHCJBWqds8h5SSJ00mAMo7tnCaPDa9BQtuQkOaOETfC00xUmG7E2p");
-                stripe.redirectToCheckout({ sessionId: session.id });
-    
             } catch (error) {
-                console.error("Subscription Error:", error);
-                alert("Failed to connect to Stripe. Check console for details.");
+                console.error("❌ Subscription Error:", error);
+                alert("Failed to connect to Stripe.");
             }
         });
-    </script>    
+    </script>
+      
 
     <script>
-        console.log("✅ JavaScript Loaded Successfully!");
-
-        document.getElementById("subscribe-button").addEventListener("click", async () => {
-            console.log("📢 Subscribe button clicked!"); // Debugging log
+        document.getElementById("plan-subscribe-button").addEventListener("click", async () => {
+            console.log("📢 Plan subscribe button clicked!"); // Debugging log
 
             let selectedPlan = document.getElementById("plan-select").value;
 
@@ -165,19 +156,13 @@
                 let session = await response.json();
 
                 if (session.error) {
-                    console.error("❌ Stripe Error:", session.error);
                     alert("Error: " + session.error);
-                    return;
-                }
-
-                if (!session.id) {
-                    alert("⚠️ Failed to create Stripe session.");
                     return;
                 }
 
                 console.log("✅ Redirecting to Stripe, session ID:", session.id);
 
-                let stripe = Stripe("your-stripe-publishable-key-here");
+                let stripe = Stripe("pk_test_51R0uaiFQW2MgVpygD13czhcptz1SR1a0Dtc6Rnpezl9RVLHCJBWqds8h5SSJ00mAMo7tnCaPDa9BQtuQkOaOETfC00xUmG7E2p");
                 stripe.redirectToCheckout({ sessionId: session.id })
                     .then((result) => {
                         if (result.error) {
