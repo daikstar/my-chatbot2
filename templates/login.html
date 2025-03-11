@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f9; }
+        #login-container { width: 50%; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); }
+        input { width: 80%; padding: 10px; margin-top: 10px; }
+        button { padding: 10px; background-color: #0084ff; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #005bb5; }
+    </style>
+</head>
+<body>
+    <div id="login-container">
+        <h2>Login to Chatbot</h2>
+        <input type="text" id="username" placeholder="Enter your username">
+        <button onclick="setUsername()">Login</button>
+    </div>
+
+    <script>
+        function setUsername() {
+            let username = document.getElementById("username").value;
+            if (!username.trim()) {
+                alert("Please enter a valid username.");
+                return;
+            }
+
+            document.cookie = `user_id=${username}; path=/`;
+            window.location.href = "/";  // Redirect to chatbot page
+        }
+    </script>
+</body>
+</html>

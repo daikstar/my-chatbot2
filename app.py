@@ -18,9 +18,11 @@ users = {"test_user": {"subscribed": False}}
 @app.route("/")
 def home():
     user_id = request.cookies.get("user_id")
+
     if not user_id:
-        return "⚠️ Please login first. Go back and enter a username.", 401
-    return render_template("index.html")
+        return render_template("login.html")  # Show login form if user isn't logged in
+
+    return render_template("index.html")  # If logged in, show the chatbot
 
 @app.route("/chat", methods=["POST"])
 def chat():
