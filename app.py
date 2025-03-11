@@ -19,6 +19,33 @@ users = {"test_user": {"subscribed": False}}
 def home():
     return render_template("index.html")
 
+@app.route("/")
+def home():
+    user_id = request.cookies.get("user_id")
+    if not user_id:
+        return "⚠️ Please login first. Go back and enter a username.", 401
+    return render_template("index.html")
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    user_id = request.cookies.get("user_id")
+    if not user_id:
+        return jsonify({"reply": "⚠️ Please log in to chat."})
+
+    # Check if user is subscribed
+    if not users.get(user_id, {}).get("subscribed", False):
+        return jsonify({"reply": "⚠️ You need a subscription to continue. Click below to subscribe."})
+
+    user_message = request.json.get("message", "")
+    
+    response = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY")).chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": user_message}]
+    )
+
+    chatbot_reply = response.choices[0].message.content
+    return jsonify({"reply": chatbot_reply})
+
 @app.route("/chat", methods=["POST"])
 def chat():
     try:

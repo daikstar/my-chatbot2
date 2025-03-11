@@ -111,6 +111,25 @@
         checkSubscription();
     </script>
     
+    <div>
+        <label for="username">Username:</label>
+        <input type="text" id="username" placeholder="Enter your username">
+        <button onclick="setUsername()">Login</button>
+    </div>
+
+    <script>
+        function setUsername() {
+            let username = document.getElementById("username").value;
+            if (!username.trim()) {
+                alert("Please enter a valid username.");
+                return;
+            }
+    
+            document.cookie = `user_id=${username}; path=/`;
+            location.reload();  // Reload page to apply changes
+        }
+    </script>
+    
     <script src="https://js.stripe.com/v3/"></script>
     <script>
         async function sendMessage() {
