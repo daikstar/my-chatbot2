@@ -73,10 +73,15 @@ def create_checkout_session():
 
 @app.route("/success")
 def success():
-    user_id = request.cookies.get("user_id", "test_user")  # Dummy user system
+    user_id = request.cookies.get("user_id", "test_user")  # Get the user ID
+
+    # Ensure the user exists in the dictionary before updating
+    if user_id not in users:
+        users[user_id] = {"subscribed": False}
+
     users[user_id]["subscribed"] = True  # Mark user as subscribed
 
-    return redirect(url_for("home", success="1"))  # Redirect to home with success message
+    return redirect(url_for("home", success="1"))  # Redirect to chat page with success message
 
 @app.route("/cancel")
 def cancel():
