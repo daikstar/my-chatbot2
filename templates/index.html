@@ -169,5 +169,13 @@
         });
     </script>
 
+    <script>
+        // Check if subscription was successful
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get("success") === "1") {
+            alert("🎉 Subscription Successful! You now have full access.");
+        }
+    </script>
+
 </body>
 </html>

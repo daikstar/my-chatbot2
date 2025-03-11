@@ -79,7 +79,8 @@ def create_checkout_session():
 def success():
     user_id = request.cookies.get("user_id", "test_user")  # Dummy user system
     users[user_id]["subscribed"] = True  # Mark user as subscribed
-    return "🎉 Subscription successful! You now have full access."
+
+    return redirect(url_for("home", success="1"))  # Redirect to home with success message
 
 @app.route("/cancel")
 def cancel():
