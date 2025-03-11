@@ -139,7 +139,7 @@
     
                 console.log("✅ Redirecting to Stripe, session ID:", session.id);
     
-                let stripe = Stripe("your-stripe-publishable-key-here");
+                let stripe = Stripe("pk_test_51R0uaiFQW2MgVpygD13czhcptz1SR1a0Dtc6Rnpezl9RVLHCJBWqds8h5SSJ00mAMo7tnCaPDa9BQtuQkOaOETfC00xUmG7E2p");
                 stripe.redirectToCheckout({ sessionId: session.id })
                     .then((result) => {
                         if (result.error) {
