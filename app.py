@@ -42,42 +42,6 @@ def chat():
     chatbot_reply = response.choices[0].message.content
     return jsonify({"reply": chatbot_reply})
 
-@app.route("/chat", methods=["POST"])
-def chat():
-    try:
-        user_id = request.cookies.get("user_id", "test_user")  # Dummy user system
-
-        # Check if user is subscribed
-        if not users.get(user_id, {}).get("subscribed", False):
-            return jsonify({"reply": "⚠️ You need a subscription to continue. Click below to subscribe."})
-
-        user_message = request.json.get("message", "")
-
-        # Debugging print
-        print(f"Received user message: {user_message}")
-
-        # ✅ NEW OpenAI API format
-        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": user_message}]
-        )
-
-        chatbot_reply = response.choices[0].message.content
-
-        # Debugging print
-        print(f"Chatbot reply: {chatbot_reply}")
-
-        return jsonify({"reply": chatbot_reply})
-
-    except openai.OpenAIError as e:
-        print(f"❌ OpenAI API Error: {str(e)}")  # Debugging
-        return jsonify({"reply": f"⚠️ OpenAI Error: {str(e)}"})
-
-    except Exception as e:
-        print(f"❌ Chatbot Error: {str(e)}")  # Debugging
-        return jsonify({"reply": "⚠️ An unexpected error occurred. Try again later."})
-
 # Check Subscription status
 @app.route("/subscription-status")
 def subscription_status():
