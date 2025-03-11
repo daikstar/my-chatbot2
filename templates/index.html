@@ -147,6 +147,51 @@
         });
     </script>    
 
+    <script>
+        console.log("✅ JavaScript Loaded Successfully!");
+
+        document.getElementById("subscribe-button").addEventListener("click", async () => {
+            console.log("📢 Subscribe button clicked!"); // Debugging log
+
+            let selectedPlan = document.getElementById("plan-select").value;
+
+            try {
+                let response = await fetch("/create-checkout-session", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plan: selectedPlan })
+                });
+
+                let session = await response.json();
+
+                if (session.error) {
+                    console.error("❌ Stripe Error:", session.error);
+                    alert("Error: " + session.error);
+                    return;
+                }
+
+                if (!session.id) {
+                    alert("⚠️ Failed to create Stripe session.");
+                    return;
+                }
+
+                console.log("✅ Redirecting to Stripe, session ID:", session.id);
+
+                let stripe = Stripe("your-stripe-publishable-key-here");
+                stripe.redirectToCheckout({ sessionId: session.id })
+                    .then((result) => {
+                        if (result.error) {
+                            alert("Error: " + result.error.message);
+                        }
+                    });
+
+            } catch (error) {
+                console.error("❌ Subscription Error:", error);
+                alert("Failed to connect to Stripe. Check console for details.");
+            }
+        });
+    </script>
+
     <div>
         <label for="username">Username:</label>
         <input type="text" id="username" placeholder="Enter your username">
