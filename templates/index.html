@@ -91,7 +91,7 @@
 </head>
 <body>
 
-    <h1>Welcome to SmartBot</h1>
+    <h1>Welcome to SmartBot <span id="subscription-status">(Checking...)</span></h1>
     <div id="chat-container">
         <div id="chat-box"></div>
         <input type="text" id="user-input" placeholder="Type your message...">
@@ -99,6 +99,18 @@
         <button id="subscribe-button">Subscribe for $9.99/month</button>
     </div>
 
+    <script>
+        async function checkSubscription() {
+            let response = await fetch("/subscription-status");
+            let data = await response.json();
+    
+            let statusText = data.subscribed ? "✅ Subscribed" : "⚠️ Not Subscribed";
+            document.getElementById("subscription-status").innerText = statusText;
+        }
+    
+        checkSubscription();
+    </script>
+    
     <script src="https://js.stripe.com/v3/"></script>
     <script>
         async function sendMessage() {

@@ -55,6 +55,13 @@ def chat():
         print(f"❌ Chatbot Error: {str(e)}")  # Debugging
         return jsonify({"reply": "⚠️ An unexpected error occurred. Try again later."})
 
+# Check Subscription status
+@app.route("/subscription-status")
+def subscription_status():
+    user_id = request.cookies.get("user_id", "test_user")  # Dummy user system
+    is_subscribed = users.get(user_id, {}).get("subscribed", False)
+    return jsonify({"subscribed": is_subscribed})
+
 # Stripe Checkout Route
 @app.route("/create-checkout-session", methods=["POST"])
 def create_checkout_session():
