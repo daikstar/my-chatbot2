@@ -124,22 +124,36 @@
             console.log("📢 Chat subscribe button clicked!"); // Debugging log
     
             try {
-                let response = await fetch("/create-checkout-session", { method: "POST" });
+                let response = await fetch("/create-checkout-session", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }, // ✅ Fix: Ensure JSON content type
+                    body: JSON.stringify({ plan: "pro" })  // ✅ Send JSON with default "pro" plan
+                });
+    
                 let session = await response.json();
-                if (session.id) {
-                    let stripe = Stripe("pk_test_51R0uaiFQW2MgVpygD13czhcptz1SR1a0Dtc6Rnpezl9RVLHCJBWqds8h5SSJ00mAMo7tnCaPDa9BQtuQkOaOETfC00xUmG7E2p");
-                    stripe.redirectToCheckout({ sessionId: session.id });
-                } else {
-                    alert("Error: Could not start Stripe session.");
+    
+                if (session.error) {
+                    alert("Error: " + session.error);
+                    return;
                 }
+    
+                console.log("✅ Redirecting to Stripe, session ID:", session.id);
+    
+                let stripe = Stripe("your-stripe-publishable-key-here");
+                stripe.redirectToCheckout({ sessionId: session.id })
+                    .then((result) => {
+                        if (result.error) {
+                            alert("Error: " + result.error.message);
+                        }
+                    });
+    
             } catch (error) {
                 console.error("❌ Subscription Error:", error);
-                alert("Failed to connect to Stripe.");
+                alert("Failed to connect to Stripe. Check console for details.");
             }
         });
-    </script>
+    </script>    
       
-
     <script>
         document.getElementById("plan-subscribe-button").addEventListener("click", async () => {
             console.log("📢 Plan subscribe button clicked!"); // Debugging log
