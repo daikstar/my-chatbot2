@@ -145,5 +145,9 @@ def success():
 def cancel():
     return "⚠️ Subscription was canceled. You can try again anytime."
 
+with app.app_context():
+    db.create_all()
+    print("✅ Database tables created successfully!")
+
 if __name__ == "__main__":
     app.run(debug=True)
