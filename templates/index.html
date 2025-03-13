@@ -242,12 +242,6 @@
     <script src="https://js.stripe.com/v3/"></script>
 
     <script>
-        async function sendMessage() {
-            let userInput = document.getElementById("user-input").value;
-            let chatBox = document.getElementById("chat-box");
-    
-            if (!userInput.trim()) return;
-    
         // Function to create a chat bubble with animation
         function createMessageBubble(text, sender) {
             let chatBox = document.getElementById("chat-box");
