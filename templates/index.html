@@ -211,7 +211,7 @@
     </script>
     
     <script src="https://js.stripe.com/v3/"></script>
-    
+
     <script>
         async function sendMessage() {
             let userInput = document.getElementById("user-input").value;
@@ -273,7 +273,7 @@
                         return;
                     }
     
-                    let stripe = Stripe("your-stripe-publishable-key-here");
+                    let stripe = Stripe("pk_test_51R0uaiFQW2MgVpygD13czhcptz1SR1a0Dtc6Rnpezl9RVLHCJBWqds8h5SSJ00mAMo7tnCaPDa9BQtuQkOaOETfC00xUmG7E2p");
                     stripe.redirectToCheckout({ sessionId: session.id });
                 });
             } else {
