@@ -14,6 +14,7 @@ STRIPE_PRICE_ID = "price_1R0vKFFQW2MgVpygSrjEqD0n"  # Replace with the Price ID 
 
 # Dummy user database (Replace with a real database later)
 users = {"test_user": {"subscribed": False}}
+FREE_TRIAL_LIMIT = 5
 
 @app.route("/")
 def home():
@@ -26,23 +27,43 @@ def home():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    user_id = request.cookies.get("user_id")
-    if not user_id:
-        return jsonify({"reply": "⚠️ Please log in to chat."})
+    try:
+        user_id = request.cookies.get("user_id")
+        if not user_id:
+            return jsonify({"reply": "⚠️ Please log in to chat."})
 
-    # Check if user is subscribed
-    if not users.get(user_id, {}).get("subscribed", False):
-        return jsonify({"reply": "⚠️ You need a subscription to continue. Click below to subscribe."})
+        # Ensure the user is in the dictionary
+        if user_id not in users:
+            users[user_id] = {"subscribed": False, "messages_used": 0}
 
-    user_message = request.json.get("message", "")
-    
-    response = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY")).chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": user_message}]
-    )
+        # Check if the user is subscribed
+        if not users[user_id]["subscribed"]:
+            if users[user_id]["messages_used"] >= FREE_TRIAL_LIMIT:
+                return jsonify({"reply": "⚠️ Free trial limit reached! Subscribe to continue chatting."})
 
-    chatbot_reply = response.choices[0].message.content
-    return jsonify({"reply": chatbot_reply})
+            # Increase free message count
+            users[user_id]["messages_used"] += 1
+
+        user_message = request.json.get("message", "")
+
+        # ✅ OpenAI API call
+        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": user_message}]
+        )
+
+        chatbot_reply = response.choices[0].message.content
+        return jsonify({"reply": chatbot_reply})
+
+    except openai.OpenAIError as e:
+        print(f"❌ OpenAI API Error: {str(e)}")  # Debugging
+        return jsonify({"reply": f"⚠️ OpenAI Error: {str(e)}"})
+
+    except Exception as e:
+        print(f"❌ Chatbot Error: {str(e)}")  # Debugging
+        return jsonify({"reply": "⚠️ An unexpected error occurred. Try again later."})
+
 
 # Check Subscription status
 @app.route("/subscription-status")

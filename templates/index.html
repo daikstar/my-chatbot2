@@ -211,23 +211,24 @@
     </script>
     
     <script src="https://js.stripe.com/v3/"></script>
+    
     <script>
         async function sendMessage() {
             let userInput = document.getElementById("user-input").value;
             let chatBox = document.getElementById("chat-box");
-
+    
             if (!userInput.trim()) return;
-
-            // Add user message in a chat bubble
+    
+            // Add user message to chat
             chatBox.innerHTML += `
                 <div class="message user">
                     <span>${userInput}</span>
                     <img src="https://cdn-icons-png.flaticon.com/512/145/145867.png" class="avatar user-avatar">
                 </div>`;
-
+    
             document.getElementById("user-input").value = "";
             chatBox.scrollTop = chatBox.scrollHeight;
-
+    
             // Show "typing..." effect
             let typingIndicator = document.createElement("div");
             typingIndicator.classList.add("message", "bot");
@@ -237,27 +238,44 @@
                 <span>Chatbot is typing...</span>`;
             chatBox.appendChild(typingIndicator);
             chatBox.scrollTop = chatBox.scrollHeight;
-
+    
             // Send message to Flask backend
             let response = await fetch("/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: userInput })
             });
-
+    
             let data = await response.json();
-
-            // Remove "typing..." effect and show chatbot response
             document.getElementById("typing-indicator").remove();
-            
-            // If user is not subscribed, show subscription message
-            if (data.reply.includes("⚠️ You need a subscription")) {
+    
+            // If free trial limit is reached, show subscribe button
+            if (data.reply.includes("⚠️ Free trial limit reached")) {
                 chatBox.innerHTML += `
                     <div class="message bot">
                         <img src="https://cdn-icons-png.flaticon.com/512/4712/4712034.png" class="avatar">
                         <span>${data.reply}</span>
-                    </div>`;
-                document.getElementById("subscribe-button").style.display = "block";
+                    </div>
+                    <button id="subscribe-button-trial">Subscribe Now</button>`;
+    
+                // Add event listener for the new button
+                document.getElementById("subscribe-button-trial").addEventListener("click", async () => {
+                    let response = await fetch("/create-checkout-session", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ plan: "pro" })  // Default plan
+                    });
+    
+                    let session = await response.json();
+    
+                    if (session.error) {
+                        alert("Error: " + session.error);
+                        return;
+                    }
+    
+                    let stripe = Stripe("your-stripe-publishable-key-here");
+                    stripe.redirectToCheckout({ sessionId: session.id });
+                });
             } else {
                 chatBox.innerHTML += `
                     <div class="message bot">
@@ -265,9 +283,11 @@
                         <span>${data.reply}</span>
                     </div>`;
             }
-
+    
             chatBox.scrollTop = chatBox.scrollHeight;
         }
+    </script>
+    
 
         // Stripe Checkout
         document.getElementById("subscribe-button").addEventListener("click", async () => {
