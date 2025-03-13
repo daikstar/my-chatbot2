@@ -52,7 +52,14 @@
             color: white;
             align-self: flex-end;
             text-align: right;
+            border-radius: 18px;
             border-top-right-radius: 5px;
+            padding: 12px 15px;
+            max-width: 75%;
+            display: flex;
+            align-items: center;
+            box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.3s forwards;
         }
 
         .bot {
@@ -252,9 +259,13 @@
             avatar.classList.add("avatar");
 
             if (sender === "user") {
-                avatar.src = "https://cdn-icons-png.flaticon.com/512/145/145867.png";
-                bubble.style.alignSelf = "flex-end";
-            } else {
+            bubble.classList.add("user");
+            avatar.src = "https://cdn-icons-png.flaticon.com/512/145/145867.png";
+            bubble.style.backgroundColor = "#0084ff";
+            bubble.style.color = "white";
+            bubble.style.alignSelf = "flex-end";
+            }
+            else {
                 avatar.src = "https://cdn-icons-png.flaticon.com/512/4712/4712034.png";
                 bubble.style.alignSelf = "flex-start";
             }
