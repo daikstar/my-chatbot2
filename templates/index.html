@@ -258,32 +258,32 @@
             let avatar = document.createElement("img");
             avatar.classList.add("avatar");
 
+            let textSpan = document.createElement("span");
+            textSpan.innerText = text;
+
             if (sender === "user") {
             bubble.classList.add("user");
             avatar.src = "https://cdn-icons-png.flaticon.com/512/145/145867.png";
             bubble.style.backgroundColor = "#0084ff";
             bubble.style.color = "white";
             bubble.style.alignSelf = "flex-end";
-            }
-            else {
-                avatar.src = "https://cdn-icons-png.flaticon.com/512/4712/4712034.png";
-                bubble.style.alignSelf = "flex-start";
-            }
 
-            let textSpan = document.createElement("span");
-            textSpan.innerText = text;
+            bubble.appendChild(textSpan);
+            bubble.appendChild(avatar);
+        } else {
+            bubble.classList.add("bot");
+            avatar.src = "https://cdn-icons-png.flaticon.com/512/4712/4712034.png";
+            bubble.style.backgroundColor = "#e0e0e0";
+            bubble.style.color = "black";
+            bubble.style.alignSelf = "flex-start";
 
-            if (sender === "user") {
-                bubble.appendChild(textSpan);
-                bubble.appendChild(avatar);
-            } else {
-                bubble.appendChild(avatar);
-                bubble.appendChild(textSpan);
-            }
+            bubble.appendChild(avatar);
+            bubble.appendChild(textSpan);
+    }
 
-            chatBox.appendChild(bubble);
-            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest message
-        }
+        chatBox.appendChild(bubble);
+        chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest message
+    }
 
         // Update sendMessage function to use the new message bubble
         async function sendMessage() {
