@@ -6,8 +6,12 @@ import stripe
 
 app = Flask(__name__)
 
-# Configure the SQLite database
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///subscriptions.db"
+# Use PostgreSQL in Production, SQLite for Local Development
+if "DATABASE_URL" in os.environ:  
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://", 1)
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///subscriptions.db"
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
