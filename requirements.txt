@@ -3,3 +3,4 @@ openai
 stripe
 gunicorn
 flask-sqlalchemy
+psycopg2-binary
