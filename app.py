@@ -1,9 +1,22 @@
 import os
 from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
 import openai
 import stripe
 
 app = Flask(__name__)
+
+# Configure the SQLite database
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///subscriptions.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy(app)
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    subscribed = db.Column(db.Boolean, default=False)
+    messages_used = db.Column(db.Integer, default=0)
 
 # Load API Keys from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -32,17 +45,23 @@ def chat():
         if not user_id:
             return jsonify({"reply": "⚠️ Please log in to chat."})
 
-        # Ensure the user is in the dictionary
-        if user_id not in users:
-            users[user_id] = {"subscribed": False, "messages_used": 0}
+        # Check if the user exists in the database
+        user = User.query.filter_by(username=user_id).first()
+
+        # If user doesn't exist, create them with a free trial
+        if not user:
+            user = User(username=user_id, subscribed=False, messages_used=0)
+            db.session.add(user)
+            db.session.commit()
 
         # Check if the user is subscribed
-        if not users[user_id]["subscribed"]:
-            if users[user_id]["messages_used"] >= FREE_TRIAL_LIMIT:
+        if not user.subscribed:
+            if user.messages_used >= FREE_TRIAL_LIMIT:
                 return jsonify({"reply": "⚠️ Free trial limit reached! Subscribe to continue chatting."})
 
             # Increase free message count
-            users[user_id]["messages_used"] += 1
+            user.messages_used += 1
+            db.session.commit()
 
         user_message = request.json.get("message", "")
 
@@ -108,15 +127,15 @@ def create_checkout_session():
 
 @app.route("/success")
 def success():
-    user_id = request.cookies.get("user_id", "test_user")  # Get the user ID
+    user_id = request.cookies.get("user_id")
 
-    # Ensure the user exists in the dictionary before updating
-    if user_id not in users:
-        users[user_id] = {"subscribed": False}
+    if user_id:
+        user = User.query.filter_by(username=user_id).first()
+        if user:
+            user.subscribed = True
+            db.session.commit()
 
-    users[user_id]["subscribed"] = True  # Mark user as subscribed
-
-    return redirect(url_for("home", success="1"))  # Redirect to chat page with success message
+    return redirect(url_for("home", success="1"))
 
 @app.route("/cancel")
 def cancel():
