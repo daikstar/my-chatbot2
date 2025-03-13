@@ -14,7 +14,7 @@ STRIPE_PRICE_ID = "price_1R0vKFFQW2MgVpygSrjEqD0n"  # Replace with the Price ID 
 
 # Dummy user database (Replace with a real database later)
 users = {"test_user": {"subscribed": False}}
-FREE_TRIAL_LIMIT = 5
+FREE_TRIAL_LIMIT = 3
 
 @app.route("/")
 def home():
