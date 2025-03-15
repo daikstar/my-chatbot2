@@ -114,3 +114,12 @@ def cancel():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+# check db schema
+@app.route("/check-db-schema")
+def check_db_schema():
+    try:
+        column_names = [col.name for col in db.metadata.tables['user'].columns]
+        return jsonify({"columns": column_names})
+    except Exception as e:
+        return jsonify({"error": str(e)})
