@@ -3,230 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat with SmartBot</title>
+    <title>LLC Formation Chatbot</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f4f4f9;
-        }
-        #chat-container {
-            width: 80%;
-            max-width: 600px;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-        }
-        #chat-box {
-            height: 400px;
-            overflow-y: auto;
-            padding: 15px;
-            border-radius: 8px;
-            background-color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            transition: all 0.3s ease-in-out;
-        }
-
-        .message {
-            display: flex;
-            align-items: center;
-            padding: 12px 15px;
-            border-radius: 18px;
-            margin: 5px;
-            max-width: 80%;
-            word-wrap: break-word;
-            font-size: 14px;
-            line-height: 1.4;
-            box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.1);
-            opacity: 0;
-            transform: translateY(10px);
-            animation: fadeIn 0.3s forwards;
-        }
-
-        .user {
-            background-color: #0084ff;
-            color: white;
-            align-self: flex-end;
-            text-align: right;
-            border-top-right-radius: 5px;
-        }
-
-        .bot {
-            background-color: #e0e0e0;
-            color: black;
-            align-self: flex-start;
-            text-align: left;
-            border-top-left-radius: 5px;
-        }
-
-        .avatar {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-
-        .user-avatar {
-            margin-left: 10px;
-            order: 2;
-        }
-
-        @keyframes fadeIn {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        #user-input {
-            width: 70%;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            outline: none;
-        }
-        button {
-            padding: 10px;
-            border: none;
-            background-color: #0084ff;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 5px;
-        }
-        button:hover {
-            background-color: #005bb5;
-        }
-        #subscribe-button {
-            background-color: #ff4d4d;
-            margin-top: 15px;
-        }
-        #subscribe-button:hover {
-            background-color: #cc0000;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f9; }
+        #chat-container { width: 80%; max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); }
+        #chat-box { height: 400px; overflow-y: auto; padding: 15px; border-radius: 8px; background-color: #ffffff; display: flex; flex-direction: column; gap: 10px; }
+        .message { padding: 12px; border-radius: 18px; margin: 5px; max-width: 75%; word-wrap: break-word; }
+        .user { background-color: #0084ff; color: white; align-self: flex-end; }
+        .bot { background-color: #e0e0e0; color: black; align-self: flex-start; }
+        #user-input { width: 70%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
+        button { padding: 10px; background-color: #0084ff; color: white; border-radius: 5px; cursor: pointer; margin-left: 5px; }
     </style>
 </head>
 <body>
 
-    <h1>Welcome to SmartBot <span id="subscription-status">(Checking...)</span></h1>
+    <h1>LLC Formation Chatbot</h1>
     <div id="chat-container">
         <div id="chat-box"></div>
         <input type="text" id="user-input" placeholder="Type your message...">
-        <button id="send-button">Send</button>
-        <button id="chat-subscribe-button">Subscribe for $9.99/month</button>
+        <button onclick="sendMessage()">Send</button>
+        <button id="subscribe-button">Subscribe for Full Guidance</button>
     </div>
 
     <script>
-        async function checkSubscription() {
-            let response = await fetch("/subscription-status");
-            let data = await response.json();
-            document.getElementById("subscription-status").innerText = data.subscribed ? "✅ Subscribed" : "⚠️ Not Subscribed";
-        }
-        checkSubscription();
-    </script>
-
-    <script>
-        function createMessageBubble(text, sender) {
+        async function sendMessage() {
+            let userInput = document.getElementById("user-input").value;
             let chatBox = document.getElementById("chat-box");
+            if (!userInput.trim()) return;
 
-            let bubble = document.createElement("div");
-            bubble.classList.add("message", sender);
+            chatBox.innerHTML += `<div class="message user">${userInput}</div>`;
+            document.getElementById("user-input").value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
 
-            let avatar = document.createElement("img");
-            avatar.classList.add("avatar");
+            let response = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: userInput })
+            });
 
-            let textSpan = document.createElement("span");
-            textSpan.innerText = text;
-
-            if (sender === "user") {
-                bubble.classList.add("user");
-                avatar.src = "https://cdn-icons-png.flaticon.com/512/145/145867.png";
-                bubble.style.backgroundColor = "#0084ff";
-                bubble.style.color = "white";
-                bubble.style.alignSelf = "flex-end";
-
-                bubble.appendChild(textSpan);
-                bubble.appendChild(avatar);
-            } else {
-                bubble.classList.add("bot");
-                avatar.src = "https://cdn-icons-png.flaticon.com/512/4712/4712034.png";
-                bubble.style.backgroundColor = "#e0e0e0";
-                bubble.style.color = "black";
-                bubble.style.alignSelf = "flex-start";
-
-                bubble.appendChild(avatar);
-                bubble.appendChild(textSpan);
-            }
-
-            chatBox.appendChild(bubble);
+            let data = await response.json();
+            chatBox.innerHTML += `<div class="message bot">${data.reply}</div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        async function sendMessage() {
-            let userInput = document.getElementById("user-input").value;
-            if (!userInput.trim()) return;
-
-            createMessageBubble(userInput, "user");
-            document.getElementById("user-input").value = "";
-
-            let typingIndicator = document.createElement("div");
-            typingIndicator.classList.add("message", "bot");
-            typingIndicator.id = "typing-indicator";
-            typingIndicator.innerHTML = `
-                <img src="https://cdn-icons-png.flaticon.com/512/4712/4712034.png" class="avatar">
-                <span>Chatbot is typing...</span>`;
-            document.getElementById("chat-box").appendChild(typingIndicator);
-
-            try {
-                let response = await fetch("/chat", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message: userInput })
-                });
-
-                let data = await response.json();
-                document.getElementById("typing-indicator").remove();
-                createMessageBubble(data.reply, "bot");
-
-            } catch (error) {
-                console.error("Chat Error:", error);
-                alert("⚠️ Failed to communicate with the chatbot.");
-            }
-        }
-
-        document.getElementById("send-button").addEventListener("click", sendMessage);
-    </script>
-
-    <script src="https://js.stripe.com/v3/"></script>
-    
-    <script>
-        document.getElementById("chat-subscribe-button").addEventListener("click", async () => {
-            try {
-                let response = await fetch("/create-checkout-session", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ plan: "pro" })
-                });
-
-                let session = await response.json();
-                if (session.error) {
-                    alert("Error: " + session.error);
-                    return;
-                }
-
-                let stripe = Stripe("pk_test_51R0uaiFQW2MgVpygD13czhcptz1SR1a0Dtc6Rnpezl9RVLHCJBWqds8h5SSJ00mAMo7tnCaPDa9BQtuQkOaOETfC00xUmG7E2p");
+        document.getElementById("subscribe-button").addEventListener("click", async () => {
+            let response = await fetch("/create-checkout-session", { method: "POST" });
+            let session = await response.json();
+            if (session.id) {
+                let stripe = Stripe("STRIPE_PUBLISHABLE_KEY");
                 stripe.redirectToCheckout({ sessionId: session.id });
-
-            } catch (error) {
-                console.error("Subscription Error:", error);
-                alert("Failed to connect to Stripe.");
             }
         });
     </script>
+
+    <script src="https://js.stripe.com/v3/"></script>
 
 </body>
 </html>

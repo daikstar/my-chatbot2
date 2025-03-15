@@ -6,151 +6,105 @@ import stripe
 
 app = Flask(__name__)
 
-# Use PostgreSQL in Production, SQLite for Local Development
+# Database configuration (PostgreSQL for production, SQLite for local testing)
 if "DATABASE_URL" in os.environ:  
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://", 1)
 else:
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///subscriptions.db"
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///llc_users.db"
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
 db = SQLAlchemy(app)
 
+# OpenAI & Stripe API Keys
+openai.api_key = os.getenv("OPENAI_API_KEY")
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
+
+# Stripe Price IDs
+STRIPE_PRICE_ID = "price_1R0vKFFQW2MgVpygSrjEqD0n"  # Replace with your Stripe subscription price ID
+
+# Define User model
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     subscribed = db.Column(db.Boolean, default=False)
-    messages_used = db.Column(db.Integer, default=0)
+    progress = db.Column(db.Text, default="{}")  # Store user's progress as JSON
 
-# Load API Keys from environment variables
-openai.api_key = os.getenv("OPENAI_API_KEY")
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+# Create database tables
+with app.app_context():
+    db.create_all()
 
-# Replace with your actual Stripe Price ID
-STRIPE_PRICE_ID = "price_1R0vKFFQW2MgVpygSrjEqD0n"  # Replace with the Price ID from Stripe dashboard
-
-# Dummy user database (Replace with a real database later)
-users = {"test_user": {"subscribed": False}}
-FREE_TRIAL_LIMIT = 3
-
+# Homepage
 @app.route("/")
 def home():
-    user_id = request.cookies.get("user_id")
+    return render_template("index.html")
 
-    if not user_id:
-        return render_template("login.html")  # Show login form if user isn't logged in
-
-    return render_template("index.html")  # If logged in, show the chatbot
-
+# Chat endpoint for LLC formation guidance
 @app.route("/chat", methods=["POST"])
 def chat():
+    user_message = request.json.get("message", "").strip()
+    user_id = request.cookies.get("user_id", "guest")
+
+    # Retrieve or create user
+    user = User.query.filter_by(username=user_id).first()
+    if not user:
+        user = User(username=user_id, subscribed=False)
+        db.session.add(user)
+        db.session.commit()
+
+    # Generate response using OpenAI
     try:
-        user_id = request.cookies.get("user_id")
-        if not user_id:
-            return jsonify({"reply": "⚠️ Please log in to chat."})
-
-        # Check if the user exists in the database
-        user = User.query.filter_by(username=user_id).first()
-
-        # If user doesn't exist, create them with a free trial
-        if not user:
-            user = User(username=user_id, subscribed=False, messages_used=0)
-            db.session.add(user)
-            db.session.commit()
-
-        # Check if the user is subscribed
-        if not user.subscribed:
-            if user.messages_used >= FREE_TRIAL_LIMIT:
-                return jsonify({"reply": "⚠️ Free trial limit reached! Subscribe to continue chatting."})
-
-            # Increase free message count
-            user.messages_used += 1
-            db.session.commit()
-
-        user_message = request.json.get("message", "")
-
-        # ✅ OpenAI API call
         client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         response = client.chat.completions.create(
             model="gpt-4",
-            messages=[{"role": "user", "content": user_message}]
+            messages=[
+                {"role": "system", "content": "You are an expert in LLC formation, guiding users through setting up an LLC in California step by step."},
+                {"role": "user", "content": user_message}
+            ]
         )
-
         chatbot_reply = response.choices[0].message.content
+
         return jsonify({"reply": chatbot_reply})
 
     except openai.OpenAIError as e:
-        print(f"❌ OpenAI API Error: {str(e)}")  # Debugging
-        return jsonify({"reply": f"⚠️ OpenAI Error: {str(e)}"})
+        return jsonify({"reply": f"⚠️ OpenAI API Error: {str(e)}"})
 
-    except Exception as e:
-        print(f"❌ Chatbot Error: {str(e)}")  # Debugging
-        return jsonify({"reply": "⚠️ An unexpected error occurred. Try again later."})
-
-
-# Check Subscription status
+# Subscription status check
 @app.route("/subscription-status")
 def subscription_status():
-    user_id = request.cookies.get("user_id")
-    if not user_id:
-        return jsonify({"subscribed": False})
-
+    user_id = request.cookies.get("user_id", "guest")
     user = User.query.filter_by(username=user_id).first()
     return jsonify({"subscribed": user.subscribed if user else False})
 
-# Stripe Checkout Route
+# Stripe checkout session
 @app.route("/create-checkout-session", methods=["POST"])
 def create_checkout_session():
     try:
-        data = request.json  # Get data from frontend
-        plan = data.get("plan")  # Retrieve selected plan
-
-        # Stripe Price IDs (Replace these with your actual IDs)
-        price_ids = {
-            "basic": "price_1R1KpBFQW2MgVpygh8S4eJwv",    # Replace with your Basic plan price ID
-            "pro": "price_1R1KpRFQW2MgVpygyxxQNohs",      # Replace with your Pro plan price ID
-            "premium": "price_1R1KpgFQW2MgVpyg9okwRgqk"   # Replace with your Premium plan price ID
-        }
-
-        if plan not in price_ids:
-            return jsonify({"error": "Invalid plan selected."}), 400
-
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
-            line_items=[{
-                "price": price_ids[plan],  # Use selected plan's price ID
-                "quantity": 1
-            }],
+            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
             mode="subscription",
-            success_url="https://my-chatbot2-ncek.onrender.com/success",
-            cancel_url="https://my-chatbot2-ncek.onrender.com/cancel"
+            success_url=url_for("success", _external=True),
+            cancel_url=url_for("cancel", _external=True),
         )
-
         return jsonify({"id": session.id})
-
     except Exception as e:
-        print("❌ Stripe Error:", str(e))  # Debugging
         return jsonify({"error": str(e)}), 500
 
+# Subscription success
 @app.route("/success")
 def success():
-    user_id = request.cookies.get("user_id")
-
-    if user_id:
-        user = User.query.filter_by(username=user_id).first()
-        if user:
-            user.subscribed = True
-            db.session.commit()
-
+    user_id = request.cookies.get("user_id", "guest")
+    user = User.query.filter_by(username=user_id).first()
+    if user:
+        user.subscribed = True
+        db.session.commit()
     return redirect(url_for("home", success="1"))
 
+# Subscription cancel
 @app.route("/cancel")
 def cancel():
     return "⚠️ Subscription was canceled. You can try again anytime."
-
-with app.app_context():
-    db.create_all()
-    print("✅ Database tables created successfully!")
 
 if __name__ == "__main__":
     app.run(debug=True)
