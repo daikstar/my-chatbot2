@@ -91,9 +91,12 @@ def chat():
 # Check Subscription status
 @app.route("/subscription-status")
 def subscription_status():
-    user_id = request.cookies.get("user_id", "test_user")  # Dummy user system
-    is_subscribed = users.get(user_id, {}).get("subscribed", False)
-    return jsonify({"subscribed": is_subscribed})
+    user_id = request.cookies.get("user_id")
+    if not user_id:
+        return jsonify({"subscribed": False})
+
+    user = User.query.filter_by(username=user_id).first()
+    return jsonify({"subscribed": user.subscribed if user else False})
 
 # Stripe Checkout Route
 @app.route("/create-checkout-session", methods=["POST"])
