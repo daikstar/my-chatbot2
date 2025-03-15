@@ -50,7 +50,7 @@
             let response = await fetch("/create-checkout-session", { method: "POST" });
             let session = await response.json();
             if (session.id) {
-                let stripe = Stripe("STRIPE_PUBLISHABLE_KEY");
+                let stripe = Stripe("{{ STRIPE_PUBLISHABLE_KEY }}");  // Use the injected key
                 stripe.redirectToCheckout({ sessionId: session.id });
             }
         });
