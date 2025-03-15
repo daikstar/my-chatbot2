@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import openai
 import stripe
+import json
 
 app = Flask(__name__)
 
@@ -54,21 +55,42 @@ def chat():
     # Retrieve or create user
     user = User.query.filter_by(username=user_id).first()
     if not user:
-        user = User(username=user_id, subscribed=False)
+        user = User(username=user_id, subscribed=False, progress="{}")  # ✅ Default empty progress
         db.session.add(user)
         db.session.commit()
 
-    # Generate response using OpenAI
+    # Retrieve existing progress
+    progress_data = json.loads(user.progress)
+
+    # OpenAI Chat Completion with Context
     try:
         client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+        # Include previous LLC formation progress in the conversation
+        messages = [
+            {"role": "system", "content": "You are an expert in LLC formation, guiding users through setting up an LLC in California step by step."},
+        ]
+
+        # If user has past progress, add it to context
+        if "steps_completed" in progress_data:
+            messages.append({"role": "assistant", "content": f"Here is what we've done so far: {progress_data['steps_completed']}"})
+
+        messages.append({"role": "user", "content": user_message})
+
         response = client.chat.completions.create(
             model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are an expert in LLC formation, guiding users through setting up an LLC in California step by step."},
-                {"role": "user", "content": user_message}
-            ]
+            messages=messages
         )
+
         chatbot_reply = response.choices[0].message.content
+
+        # Store progress
+        progress_data["last_message"] = user_message
+        progress_data["last_reply"] = chatbot_reply
+        progress_data["steps_completed"] = chatbot_reply  # Update completed steps
+
+        user.progress = json.dumps(progress_data)
+        db.session.commit()
 
         return jsonify({"reply": chatbot_reply})
 
