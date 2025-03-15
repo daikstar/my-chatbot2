@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from flask_migrate import Migrate, upgrade
 import openai
 import stripe
 import json
@@ -17,6 +17,13 @@ else:
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)  # ✅ Ensure migrations work
+
+with app.app_context():
+    try:
+        upgrade()
+        print("✅ Database migrations applied successfully!")
+    except Exception as e:
+        print(f"⚠️ Database migration failed: {str(e)}")
 
 # OpenAI & Stripe API Keys
 openai.api_key = os.getenv("OPENAI_API_KEY")
