@@ -27,7 +27,7 @@
             background-color: #ffffff;
             display: flex;
             flex-direction: column;
-            gap: 10px; /* Adds space between messages */
+            gap: 10px;
             transition: all 0.3s ease-in-out;
         }
 
@@ -41,7 +41,7 @@
             word-wrap: break-word;
             font-size: 14px;
             line-height: 1.4;
-            box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.1); /* Adds a soft shadow */
+            box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.1);
             opacity: 0;
             transform: translateY(10px);
             animation: fadeIn 0.3s forwards;
@@ -52,14 +52,7 @@
             color: white;
             align-self: flex-end;
             text-align: right;
-            border-radius: 18px;
             border-top-right-radius: 5px;
-            padding: 12px 15px;
-            max-width: 75%;
-            display: flex;
-            align-items: center;
-            box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.1);
-            animation: fadeIn 0.3s forwards;
         }
 
         .bot {
@@ -82,7 +75,6 @@
             order: 2;
         }
 
-        /* Fade-in animation for chat bubbles */
         @keyframes fadeIn {
             to {
                 opacity: 1;
@@ -124,7 +116,7 @@
     <div id="chat-container">
         <div id="chat-box"></div>
         <input type="text" id="user-input" placeholder="Type your message...">
-        <button onclick="sendMessage()">Send</button>
+        <button id="send-button">Send</button>
         <button id="chat-subscribe-button">Subscribe for $9.99/month</button>
     </div>
 
@@ -132,117 +124,12 @@
         async function checkSubscription() {
             let response = await fetch("/subscription-status");
             let data = await response.json();
-    
-            let statusText = data.subscribed ? "✅ Subscribed" : "⚠️ Not Subscribed";
-            document.getElementById("subscription-status").innerText = statusText;
+            document.getElementById("subscription-status").innerText = data.subscribed ? "✅ Subscribed" : "⚠️ Not Subscribed";
         }
-    
         checkSubscription();
     </script>
-    
-    <h2>Choose Your Plan</h2>
-    <select id="plan-select">
-        <option value="basic">Basic - $5/month (50 messages)</option>
-        <option value="pro">Pro - $10/month (200 messages)</option>
-        <option value="premium">Premium - $20/month (Unlimited messages)</option>
-    </select>
-    <button id="plan-subscribe-button">Subscribe</button>
-    
-    <script>
-        document.getElementById("chat-subscribe-button").addEventListener("click", async () => {
-            console.log("📢 Chat subscribe button clicked!"); // Debugging log
-    
-            try {
-                let response = await fetch("/create-checkout-session", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" }, // ✅ Fix: Ensure JSON content type
-                    body: JSON.stringify({ plan: "pro" })  // ✅ Send JSON with default "pro" plan
-                });
-    
-                let session = await response.json();
-    
-                if (session.error) {
-                    alert("Error: " + session.error);
-                    return;
-                }
-    
-                console.log("✅ Redirecting to Stripe, session ID:", session.id);
-    
-                let stripe = Stripe("pk_test_51R0uaiFQW2MgVpygD13czhcptz1SR1a0Dtc6Rnpezl9RVLHCJBWqds8h5SSJ00mAMo7tnCaPDa9BQtuQkOaOETfC00xUmG7E2p");
-                stripe.redirectToCheckout({ sessionId: session.id })
-                    .then((result) => {
-                        if (result.error) {
-                            alert("Error: " + result.error.message);
-                        }
-                    });
-    
-            } catch (error) {
-                console.error("❌ Subscription Error:", error);
-                alert("Failed to connect to Stripe. Check console for details.");
-            }
-        });
-    </script>    
-      
-    <script>
-        document.getElementById("plan-subscribe-button").addEventListener("click", async () => {
-            console.log("📢 Plan subscribe button clicked!"); // Debugging log
-
-            let selectedPlan = document.getElementById("plan-select").value;
-
-            try {
-                let response = await fetch("/create-checkout-session", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ plan: selectedPlan })
-                });
-
-                let session = await response.json();
-
-                if (session.error) {
-                    alert("Error: " + session.error);
-                    return;
-                }
-
-                console.log("✅ Redirecting to Stripe, session ID:", session.id);
-
-                let stripe = Stripe("pk_test_51R0uaiFQW2MgVpygD13czhcptz1SR1a0Dtc6Rnpezl9RVLHCJBWqds8h5SSJ00mAMo7tnCaPDa9BQtuQkOaOETfC00xUmG7E2p");
-                stripe.redirectToCheckout({ sessionId: session.id })
-                    .then((result) => {
-                        if (result.error) {
-                            alert("Error: " + result.error.message);
-                        }
-                    });
-
-            } catch (error) {
-                console.error("❌ Subscription Error:", error);
-                alert("Failed to connect to Stripe. Check console for details.");
-            }
-        });
-    </script>
-
-    <div>
-        <label for="username">Username:</label>
-        <input type="text" id="username" placeholder="Enter your username">
-        <button onclick="setUsername()">Login</button>
-    </div>
 
     <script>
-        function setUsername() {
-            let username = document.getElementById("username").value;
-            if (!username.trim()) {
-                alert("Please enter a valid username.");
-                return;
-            }
-    
-            document.cookie = `user_id=${username}; path=/`;
-            location.reload();  // Reload page to apply changes
-        }
-    </script>
-    
-    <script src="https://js.stripe.com/v3/"></script>
-
-    <script>
-        // Function to create a chat bubble with animation
         function createMessageBubble(text, sender) {
             let chatBox = document.getElementById("chat-box");
 
@@ -256,145 +143,89 @@
             textSpan.innerText = text;
 
             if (sender === "user") {
-            bubble.classList.add("user");
-            avatar.src = "https://cdn-icons-png.flaticon.com/512/145/145867.png";
-            bubble.style.backgroundColor = "#0084ff";
-            bubble.style.color = "white";
-            bubble.style.alignSelf = "flex-end";
+                bubble.classList.add("user");
+                avatar.src = "https://cdn-icons-png.flaticon.com/512/145/145867.png";
+                bubble.style.backgroundColor = "#0084ff";
+                bubble.style.color = "white";
+                bubble.style.alignSelf = "flex-end";
 
-            bubble.appendChild(textSpan);
-            bubble.appendChild(avatar);
-        } else {
-            bubble.classList.add("bot");
-            avatar.src = "https://cdn-icons-png.flaticon.com/512/4712/4712034.png";
-            bubble.style.backgroundColor = "#e0e0e0";
-            bubble.style.color = "black";
-            bubble.style.alignSelf = "flex-start";
+                bubble.appendChild(textSpan);
+                bubble.appendChild(avatar);
+            } else {
+                bubble.classList.add("bot");
+                avatar.src = "https://cdn-icons-png.flaticon.com/512/4712/4712034.png";
+                bubble.style.backgroundColor = "#e0e0e0";
+                bubble.style.color = "black";
+                bubble.style.alignSelf = "flex-start";
 
-            bubble.appendChild(avatar);
-            bubble.appendChild(textSpan);
-    }
+                bubble.appendChild(avatar);
+                bubble.appendChild(textSpan);
+            }
 
-        chatBox.appendChild(bubble);
-        chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest message
-    }
+            chatBox.appendChild(bubble);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
 
-        // Update sendMessage function to use the new message bubble
         async function sendMessage() {
             let userInput = document.getElementById("user-input").value;
-            let chatBox = document.getElementById("chat-box");
-
             if (!userInput.trim()) return;
 
             createMessageBubble(userInput, "user");
             document.getElementById("user-input").value = "";
 
-            // Show "typing..." effect
             let typingIndicator = document.createElement("div");
             typingIndicator.classList.add("message", "bot");
             typingIndicator.id = "typing-indicator";
             typingIndicator.innerHTML = `
                 <img src="https://cdn-icons-png.flaticon.com/512/4712/4712034.png" class="avatar">
                 <span>Chatbot is typing...</span>`;
-            chatBox.appendChild(typingIndicator);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            document.getElementById("chat-box").appendChild(typingIndicator);
 
-            // Send message to Flask backend
-            let response = await fetch("/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: userInput })
-            });
-
-            let data = await response.json();
-
-            // Remove "typing..." effect
-            document.getElementById("typing-indicator").remove();
-
-            // Display chatbot response
-            createMessageBubble(data.reply, "bot");
-        }
-
-            document.getElementById("user-input").value = "";
-            chatBox.scrollTop = chatBox.scrollHeight;
-    
-            // Show "typing..." effect
-            let typingIndicator = document.createElement("div");
-            typingIndicator.classList.add("message", "bot");
-            typingIndicator.id = "typing-indicator";
-            typingIndicator.innerHTML = `
-                <img src="https://cdn-icons-png.flaticon.com/512/4712/4712034.png" class="avatar">
-                <span>Chatbot is typing...</span>`;
-            chatBox.appendChild(typingIndicator);
-            chatBox.scrollTop = chatBox.scrollHeight;
-    
-            // Send message to Flask backend
-            let response = await fetch("/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: userInput })
-            });
-    
-            let data = await response.json();
-            document.getElementById("typing-indicator").remove();
-    
-            // If free trial limit is reached, show subscribe button
-            if (data.reply.includes("⚠️ Free trial limit reached")) {
-                chatBox.innerHTML += `
-                    <div class="message bot">
-                        <img src="https://cdn-icons-png.flaticon.com/512/4712/4712034.png" class="avatar">
-                        <span>${data.reply}</span>
-                    </div>
-                    <button id="subscribe-button-trial">Subscribe Now</button>`;
-    
-                // Add event listener for the new button
-                document.getElementById("subscribe-button-trial").addEventListener("click", async () => {
-                    let response = await fetch("/create-checkout-session", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ plan: "pro" })  // Default plan
-                    });
-    
-                    let session = await response.json();
-    
-                    if (session.error) {
-                        alert("Error: " + session.error);
-                        return;
-                    }
-    
-                    let stripe = Stripe("pk_test_51R0uaiFQW2MgVpygD13czhcptz1SR1a0Dtc6Rnpezl9RVLHCJBWqds8h5SSJ00mAMo7tnCaPDa9BQtuQkOaOETfC00xUmG7E2p");
-                    stripe.redirectToCheckout({ sessionId: session.id });
+            try {
+                let response = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: userInput })
                 });
-            } else {
-                chatBox.innerHTML += `
-                    <div class="message bot">
-                        <img src="https://cdn-icons-png.flaticon.com/512/4712/4712034.png" class="avatar">
-                        <span>${data.reply}</span>
-                    </div>`;
+
+                let data = await response.json();
+                document.getElementById("typing-indicator").remove();
+                createMessageBubble(data.reply, "bot");
+
+            } catch (error) {
+                console.error("Chat Error:", error);
+                alert("⚠️ Failed to communicate with the chatbot.");
             }
-    
-            chatBox.scrollTop = chatBox.scrollHeight;
         }
+
+        document.getElementById("send-button").addEventListener("click", sendMessage);
     </script>
+
+    <script src="https://js.stripe.com/v3/"></script>
     
     <script>
-        // Stripe Checkout
-        document.getElementById("subscribe-button").addEventListener("click", async () => {
-            let response = await fetch("/create-checkout-session", { method: "POST" });
-            let session = await response.json();
-            if (session.id) {
+        document.getElementById("chat-subscribe-button").addEventListener("click", async () => {
+            try {
+                let response = await fetch("/create-checkout-session", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plan: "pro" })
+                });
+
+                let session = await response.json();
+                if (session.error) {
+                    alert("Error: " + session.error);
+                    return;
+                }
+
                 let stripe = Stripe("pk_test_51R0uaiFQW2MgVpygD13czhcptz1SR1a0Dtc6Rnpezl9RVLHCJBWqds8h5SSJ00mAMo7tnCaPDa9BQtuQkOaOETfC00xUmG7E2p");
                 stripe.redirectToCheckout({ sessionId: session.id });
+
+            } catch (error) {
+                console.error("Subscription Error:", error);
+                alert("Failed to connect to Stripe.");
             }
         });
-    </script>
-
-    <script>
-        // Check if subscription was successful
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get("success") === "1") {
-            alert("🎉 Subscription Successful! You now have full access.");
-        }
     </script>
 
 </body>
