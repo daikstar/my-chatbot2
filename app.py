@@ -1,6 +1,7 @@
 import os
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 import openai
 import stripe
 
@@ -14,6 +15,7 @@ else:
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)  # ✅ Ensure migrations work
 
 # OpenAI & Stripe API Keys
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -21,18 +23,22 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
 
 # Stripe Price IDs
-STRIPE_PRICE_ID = "price_1R0vKFFQW2MgVpygSrjEqD0n"  # Replace with your Stripe subscription price ID
+STRIPE_PRICE_ID = "price_1R0vKFFQW2MgVpygSrjEqD0n"  # Replace with actual price ID
 
 # Define User model
 class User(db.Model):
+    __tablename__ = 'user'
+    __table_args__ = {'extend_existing': True}  # ✅ Fix table conflicts
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     subscribed = db.Column(db.Boolean, default=False)
     progress = db.Column(db.Text, default="{}")  # Store user's progress as JSON
 
-# Create database tables
-with app.app_context():
-    db.create_all()
+# Create database tables (ONLY for SQLite)
+if "DATABASE_URL" not in os.environ:
+    with app.app_context():
+        db.create_all()
 
 # Homepage
 @app.route("/")
