@@ -4,3 +4,4 @@ stripe
 gunicorn
 flask-sqlalchemy
 psycopg2-binary
+flask_migrate
