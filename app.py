@@ -62,63 +62,58 @@ def chat():
     # Retrieve or create user
     user = User.query.filter_by(username=user_id).first()
     if not user:
-        user = User(username=user_id, subscribed=False, progress=json.dumps({"step": 0})) 
+        user = User(username=user_id, subscribed=False, progress=json.dumps({}))
         db.session.add(user)
         db.session.commit()
 
-    # Retrieve existing progress
-    try:
-        progress_data = json.loads(user.progress)
-    except json.JSONDecodeError:
-        progress_data = {"step": 0}
+    # Load or initialize progress
+    progress_data = json.loads(user.progress)
 
-    # Define structured steps for forming an LLC
-    LLC_STEPS = [
-        "Step 1: Choose a name for your LLC.",
-        "Step 2: File Articles of Organization with the California Secretary of State.",
-        "Step 3: Appoint a registered agent.",
-        "Step 4: Create an LLC Operating Agreement.",
-        "Step 5: Get an Employer Identification Number (EIN) from the IRS.",
-        "Step 6: File any necessary state and local business licenses.",
-        "Step 7: Comply with ongoing LLC requirements like tax filings and annual reports."
-    ]    
-
-    step_index = progress_data.get("step", 0)
-
-    # Build OpenAI messages
+    # Build conversation context
     messages = [
-        {"role": "system", "content": "You are an expert in LLC formation, guiding users through setting up an LLC in California step by step."},
+        {
+            "role": "system",
+            "content": (
+                "You're a friendly expert in helping people form an LLC in California. "
+                "Provide helpful, clear answers to any part of the process and track the user's progress. "
+                "Be conversational and supportive. Summarize completed steps if relevant."
+            )
+        }
     ]
-    if step_index > 0:
-        messages.append({"role": "assistant", "content": f"You've already completed: {LLC_STEPS[step_index - 1]}"})
+
+    # Add prior progress summary if available
+    if "steps_completed" in progress_data:
+        messages.append({
+            "role": "assistant",
+            "content": f"So far, you've completed: {', '.join(progress_data['steps_completed'])}."
+        })
 
     messages.append({"role": "user", "content": user_message})
 
+    # OpenAI Chat API call
     try:
         client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         response = client.chat.completions.create(
             model="gpt-4",
             messages=messages
         )
-        gpt_reply = response.choices[0].message.content
 
-        # Update progress and reply
-        if step_index < len(LLC_STEPS):
-            next_step = LLC_STEPS[step_index]
-            progress_data["step"] = step_index + 1
-            chatbot_reply = next_step
-        else:
-            chatbot_reply = "🎉 You've completed all the steps to form an LLC in California!"
-            progress_data["step"] = len(LLC_STEPS)
+        reply = response.choices[0].message.content
 
-        progress_data["last_user_input"] = user_message
-        progress_data["last_gpt_reply"] = gpt_reply
+        # Save last message and reply
+        progress_data["last_message"] = user_message
+        progress_data["last_reply"] = reply
 
-        # Save progress
+        # Optional: Auto-tag a completed step if GPT confirms one
+        for step in ["Choose a name", "File Articles", "Appoint registered agent", "Create Operating Agreement", "Get EIN", "File licenses", "Ongoing compliance"]:
+            if step.lower() in reply.lower():
+                progress_data.setdefault("steps_completed", []).append(step)
+                break
+
         user.progress = json.dumps(progress_data)
         db.session.commit()
 
-        return jsonify({"reply": chatbot_reply})
+        return jsonify({"reply": reply})
 
     except openai.OpenAIError as e:
         return jsonify({"reply": f"⚠️ OpenAI API Error: {str(e)}"})
