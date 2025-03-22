@@ -99,6 +99,26 @@ def chat():
         user.progress = json.dumps(progress_data)
         db.session.commit()
 
+        # Define structured steps for forming an LLC
+        LLC_STEPS = [
+            "Step 1: Choose a name for your LLC.",
+            "Step 2: File Articles of Organization with the California Secretary of State.",
+            "Step 3: Appoint a registered agent.",
+            "Step 4: Create an LLC Operating Agreement.",
+            "Step 5: Get an Employer Identification Number (EIN) from the IRS.",
+            "Step 6: File any necessary state and local business licenses.",
+            "Step 7: Comply with ongoing LLC requirements like tax filings and annual reports."
+        ]
+
+        # Determine next step based on user progress
+        step_index = int(user.progress.split(" ")[-1]) - 1  # Extract step number
+        if step_index < len(LLC_STEPS):
+            chatbot_reply = LLC_STEPS[step_index]
+            user.progress = f"Step {step_index + 2}" if step_index + 1 < len(LLC_STEPS) else "Completed"
+            db.session.commit()
+        else:
+            chatbot_reply = "You have completed all steps for forming an LLC in California!"
+
         return jsonify({"reply": chatbot_reply})
 
     except openai.OpenAIError as e:
