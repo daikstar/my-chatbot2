@@ -62,62 +62,61 @@ def chat():
     # Retrieve or create user
     user = User.query.filter_by(username=user_id).first()
     if not user:
-        user = User(username=user_id, subscribed=False, progress="{}")  # ✅ Default empty progress
+        user = User(username=user_id, subscribed=False, progress=json.dumps({"step": 0})) 
         db.session.add(user)
         db.session.commit()
 
     # Retrieve existing progress
-    progress_data = json.loads(user.progress)
+    try:
+        progress_data = json.loads(user.progress)
+    except json.JSONDecodeError:
+        progress_data = {"step": 0}
 
-    # OpenAI Chat Completion with Context
+    # Define structured steps for forming an LLC
+    LLC_STEPS = [
+        "Step 1: Choose a name for your LLC.",
+        "Step 2: File Articles of Organization with the California Secretary of State.",
+        "Step 3: Appoint a registered agent.",
+        "Step 4: Create an LLC Operating Agreement.",
+        "Step 5: Get an Employer Identification Number (EIN) from the IRS.",
+        "Step 6: File any necessary state and local business licenses.",
+        "Step 7: Comply with ongoing LLC requirements like tax filings and annual reports."
+    ]    
+
+    step_index = progress_data.get("step", 0)
+
+    # Build OpenAI messages
+    messages = [
+        {"role": "system", "content": "You are an expert in LLC formation, guiding users through setting up an LLC in California step by step."},
+    ]
+    if step_index > 0:
+        messages.append({"role": "assistant", "content": f"You've already completed: {LLC_STEPS[step_index - 1]}"})
+
+    messages.append({"role": "user", "content": user_message})
+
     try:
         client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-        # Include previous LLC formation progress in the conversation
-        messages = [
-            {"role": "system", "content": "You are an expert in LLC formation, guiding users through setting up an LLC in California step by step."},
-        ]
-
-        # If user has past progress, add it to context
-        if "steps_completed" in progress_data:
-            messages.append({"role": "assistant", "content": f"Here is what we've done so far: {progress_data['steps_completed']}"})
-
-        messages.append({"role": "user", "content": user_message})
-
         response = client.chat.completions.create(
             model="gpt-4",
             messages=messages
         )
+        gpt_reply = response.choices[0].message.content
 
-        chatbot_reply = response.choices[0].message.content
+        # Update progress and reply
+        if step_index < len(LLC_STEPS):
+            next_step = LLC_STEPS[step_index]
+            progress_data["step"] = step_index + 1
+            chatbot_reply = next_step
+        else:
+            chatbot_reply = "🎉 You've completed all the steps to form an LLC in California!"
+            progress_data["step"] = len(LLC_STEPS)
 
-        # Store progress
-        progress_data["last_message"] = user_message
-        progress_data["last_reply"] = chatbot_reply
-        progress_data["steps_completed"] = chatbot_reply  # Update completed steps
+        progress_data["last_user_input"] = user_message
+        progress_data["last_gpt_reply"] = gpt_reply
 
+        # Save progress
         user.progress = json.dumps(progress_data)
         db.session.commit()
-
-        # Define structured steps for forming an LLC
-        LLC_STEPS = [
-            "Step 1: Choose a name for your LLC.",
-            "Step 2: File Articles of Organization with the California Secretary of State.",
-            "Step 3: Appoint a registered agent.",
-            "Step 4: Create an LLC Operating Agreement.",
-            "Step 5: Get an Employer Identification Number (EIN) from the IRS.",
-            "Step 6: File any necessary state and local business licenses.",
-            "Step 7: Comply with ongoing LLC requirements like tax filings and annual reports."
-        ]
-
-        # Determine next step based on user progress
-        step_index = int(user.progress.split(" ")[-1]) - 1  # Extract step number
-        if step_index < len(LLC_STEPS):
-            chatbot_reply = LLC_STEPS[step_index]
-            user.progress = f"Step {step_index + 2}" if step_index + 1 < len(LLC_STEPS) else "Completed"
-            db.session.commit()
-        else:
-            chatbot_reply = "You have completed all steps for forming an LLC in California!"
 
         return jsonify({"reply": chatbot_reply})
 
