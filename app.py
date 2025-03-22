@@ -104,10 +104,14 @@ def chat():
         progress_data["last_message"] = user_message
         progress_data["last_reply"] = reply
 
+        # Make sure steps_completed is a list before appending
+        if "steps_completed" not in progress_data or not isinstance(progress_data["steps_completed"], list):
+            progress_data["steps_completed"] = []
+
         # Optional: Auto-tag a completed step if GPT confirms one
         for step in ["Choose a name", "File Articles", "Appoint registered agent", "Create Operating Agreement", "Get EIN", "File licenses", "Ongoing compliance"]:
-            if step.lower() in reply.lower():
-                progress_data.setdefault("steps_completed", []).append(step)
+            if step.lower() in reply.lower() and step not in progress_data["steps_completed"]:
+                progress_data["steps_completed"].append(step)
                 break
 
         user.progress = json.dumps(progress_data)
